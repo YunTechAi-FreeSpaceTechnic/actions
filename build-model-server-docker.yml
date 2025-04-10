@@ -1,0 +1,46 @@
+name: "Build and Push Docker Image to GHCR"
+description: "Builds a Docker image and pushes it to GitHub Container Registry."
+inputs:
+  image_name:
+    description: "Base name of the Docker image in GHCR (e.g., my-app)"
+    required: true
+  extra_tags:
+    description: "Additional tags to apply (comma-separated)"
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Clone ModelServer Repository
+      run: git clone --recurse-submodules https://github.com/YunTechAi-FreeSpaceTechnic/ModelServer.git
+      shell: bash
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        path: ModelServer/model
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ github.token }} # Using github.token in a reusable action
+
+    - name: Build and push Docker image
+      id: docker_build_push
+      shell: bash
+      run: |
+        IMAGE_FULL_NAME="ghcr.io/${{ github.repository_owner }}/${{ inputs.image_name }}"
+        TAGS="${IMAGE_FULL_NAME}:latest,${IMAGE_FULL_NAME}:${{ github.ref_name }}${{ inputs.extra_tags && ',' }}${{ inputs.extra_tags }}"
+        docker buildx build \
+          --build-arg MODEL=model
+          --tag "${TAGS//,/ }" \
+          --push \
+          ModelServer

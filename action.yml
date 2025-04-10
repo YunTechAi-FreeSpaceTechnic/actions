@@ -8,6 +8,10 @@ inputs:
     description: "Additional tags to apply (comma-separated)"
     required: false
     default: ""
+  token:
+    description: "GitHub Token"
+    required: false
+    default: ${{ github.token }}
 
 runs:
   using: "composite"
@@ -31,7 +35,7 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
-        password: ${{ github.token }} # Using github.token in a reusable action
+        password: ${{ inputs.token }} # Using github.token in a reusable action
 
     - name: Build and push Docker image
       id: docker_build_push

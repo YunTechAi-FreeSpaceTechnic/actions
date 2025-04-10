@@ -3,7 +3,7 @@ description: "Builds a Docker image and pushes it to GitHub Container Registry."
 inputs:
   image_name:
     description: "Base name of the Docker image in GHCR (e.g., my-app)"
-    required: true
+    required: false
   extra_tags:
     description: "Additional tags to apply (comma-separated)"
     required: false
@@ -37,7 +37,11 @@ runs:
       id: docker_build_push
       shell: bash
       run: |
-        IMAGE_FULL_NAME="ghcr.io/${{ github.repository_owner }}/${{ inputs.image_name }}"
+        IMAGE_NAME="${{ inputs.image_name }}"
+        if [ -z "$IMAGE_NAME" ]; then
+          IMAGE_NAME="$(basename "${{ github.repository }}")"
+        fi
+        IMAGE_FULL_NAME="ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}"
         TAGS="${IMAGE_FULL_NAME}:latest,${IMAGE_FULL_NAME}:${{ github.ref_name }}${{ inputs.extra_tags && ',' }}${{ inputs.extra_tags }}"
         docker buildx build \
           --build-arg MODEL=model
